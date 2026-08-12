@@ -1,555 +1,226 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Pastel Cute Tetris - Growing Cats</title>
-  <style>
-    body {
-      background: #fdf2f8;
-      color: #5b4b62;
-      font-family: 'Quicksand', 'Nunito', 'Segoe UI', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      overflow: hidden;
-    }
-    .game-container {
-      display: flex;
-      gap: 24px;
-      align-items: flex-start;
-      background: #ffffff;
-      padding: 24px;
-      border-radius: 24px;
-      box-shadow: 0 10px 25px rgba(221, 180, 208, 0.4);
-      border: 4px solid #fbcfe8;
-    }
-    .canvas-wrapper {
-      position: relative;
-    }
-    canvas {
-      background: #fff5f8;
-      border: 3px solid #f472b6;
-      border-radius: 16px;
-      box-shadow: inset 0 0 12px rgba(244, 114, 182, 0.15);
-      display: block;
-    }
-    /* ポーズ画面のオーバーレイ */
-    .pause-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 245, 248, 0.85);
-      backdrop-filter: blur(4px);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      border-radius: 16px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
-    .pause-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .pause-title {
-      font-size: 26px;
-      font-weight: bold;
-      color: #f472b6;
-      letter-spacing: 2px;
-      text-shadow: 0 2px 4px rgba(244, 114, 182, 0.2);
-      margin-bottom: 8px;
-    }
-    .pause-sub {
-      font-size: 12px;
-      color: #9d8ba7;
-    }
-    .info {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: center;
-      width: 180px;
-    }
-    h1 {
-      margin: 0;
-      font-size: 26px;
-      align-self: flex-start;
-      color: #f472b6;
-      letter-spacing: 1px;
-    }
-    .score-box {
-      font-size: 16px;
-      align-self: flex-start;
-      background: #fdf2f8;
-      width: 100%;
-      padding: 10px;
-      border-radius: 14px;
-      box-sizing: border-box;
-      border: 2px solid #fbcfe8;
-      color: #9d8ba7;
-      font-weight: bold;
-    }
-    .score-box span {
-      color: #f472b6;
-      float: right;
-      font-size: 18px;
-    }
-    .controls {
-      font-size: 12px;
-      color: #8c7a99;
-      line-height: 1.5;
-      align-self: flex-start;
-      background: #fdf2f8;
-      width: 100%;
-      padding: 10px;
-      border-radius: 14px;
-      box-sizing: border-box;
-      border: 2px solid #fbcfe8;
-    }
-    .controls strong {
-      color: #f472b6;
-    }
-
-    /* 猫が集まるエリア */
-    .cat-yard {
-      width: 100%;
-      min-height: 120px;
-      max-height: 160px;
-      padding: 4px 0;
-      box-sizing: border-box;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-content: flex-start;
-      overflow-y: auto;
-    }
-
-    .cat-character {
-      width: 36px;
-      height: 36px;
-      filter: drop-shadow(0 2px 4px rgba(244, 114, 182, 0.2));
-      animation: catPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    @keyframes catPop {
-      0% { transform: scale(0) rotate(-15deg); opacity: 0; }
-      100% { transform: scale(1) rotate(0deg); opacity: 1; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15 Puzzle - Start to Play</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* パズルのグリッドレイアウト設定 */
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        /* スマホでのタップ操作を快適にする設定 */
+        .tile {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: manipulation;
+        }
+    </style>
 </head>
-<body>
+<!-- Chosen Palette: Warm Gray & Soft Blue -->
+<!-- Application Structure Plan: 
+    1. 導入セクション: ゲームの説明と現在のステータス。
+    2. インタラクティブ・ボード: 4x4のタイル。初期状態は「完成図」を表示し、ボタン押下で「ゲーム開始」。
+    3. 動的ステータス管理: スタートボタンと連動してJavaScriptのタイマーと手数カウンターを制御。
+    4. クリア通知: 完了時に記録を表示するオーバーレイ。
+-->
+<!-- Visualization & Content Choices: 
+    - 15パズル -> 目的: 娯楽と論理的思考 -> 表現: グリッドコンポーネント。
+    - 手数・タイマー -> 目的: スコアの可視化 -> 表現: 上部のバッジ表示。
+    - 操作性: スマホ対応のため、タップしやすいボタンサイズと視認性の高いフォントを採用。
+-->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
-<div class="game-container">
-  <div class="canvas-wrapper">
-    <canvas id="tetris" width="240" height="400"></canvas>
-    <div id="pause-overlay" class="pause-overlay">
-      <div class="pause-title">PAUSED</div>
-      <div class="pause-sub">P または Esc で再開</div>
-    </div>
-  </div>
-  
-  <div class="info">
-    <h1>TETRIS</h1>
-    <div class="score-box">スコア <span id="score">0</span></div>
-    <div class="controls">
-      <strong>操作方法:</strong><br>
-      ← / → : 移動<br>
-      ↑ / Space : 回転<br>
-      ↓ : ソフトドロップ<br>
-      <strong>P / Esc : 一時停止</strong>
-    </div>
-    
-    <!-- 猫が集まるエリア -->
-    <div id="cat-yard" class="cat-yard"></div>
-  </div>
-</div>
+<body class="bg-stone-50 text-stone-800 min-h-screen flex flex-col items-center p-4">
 
-<script>
-const canvas = document.getElementById('tetris');
-const context = canvas.getContext('2d');
-const scoreElement = document.getElementById('score');
-const pauseOverlay = document.getElementById('pause-overlay');
-const catYard = document.getElementById('cat-yard');
-
-context.scale(20, 20);
-
-const particles = [];
-const flashes = [];
-let isPaused = false;
-
-const CAT_COLORS = [
-  { body: '#ffb7b2', ear: '#ffd1dc' }, // ピンク
-  { body: '#ffdac1', ear: '#ffe5d9' }, // ピーチ
-  { body: '#bdb2ff', ear: '#e7c6ff' }, // ラベンダー
-  { body: '#b5ead7', ear: '#c7f9cc' }, // ミント
-  { body: '#a2d2ff', ear: '#d4e6ff' }, // スカイブルー
-  { body: '#fff3b0', ear: '#fffae0' }  // イエロー
-];
-
-const SHAPES = [
-  [],
-  [[0, 0, 0], [1, 1, 1], [0, 1, 0]], // T
-  [[0, 2, 2], [2, 2, 0], [0, 0, 0]], // S
-  [[3, 3, 0], [0, 3, 3], [0, 0, 0]], // Z
-  [[4, 4], [4, 4]],                   // O
-  [[0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0], [0, 5, 0, 0]], // I
-  [[6, 0, 0], [6, 6, 6], [0, 0, 0]], // L
-  [[0, 0, 7], [7, 7, 7], [0, 0, 0]]  // J
-];
-
-const COLORS = [
-  null,
-  '#c7ceea',
-  '#b5ead7',
-  '#ff9aa2',
-  '#ffdac1',
-  '#e2f0cb',
-  '#ffb7b2',
-  '#a2d2ff'
-];
-
-const arena = Array(20).fill().map(() => Array(12).fill(0));
-
-const player = {
-  pos: {x: 0, y: 0},
-  matrix: null,
-  score: 0
-};
-
-function addCat() {
-  const color = CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)];
-  const catSvg = `
-    <svg class="cat-character" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="20,40 32,15 45,32" fill="${color.body}" />
-      <polygon points="80,40 68,15 55,32" fill="${color.body}" />
-      <polygon points="23,38 32,20 42,32" fill="${color.ear}" />
-      <polygon points="77,38 68,20 58,32" fill="${color.ear}" />
-      <ellipse cx="50" cy="50" rx="35" ry="28" fill="${color.body}" />
-      <ellipse cx="38" cy="46" rx="4" ry="6" fill="#5b4b62" />
-      <ellipse cx="62" cy="46" rx="4" ry="6" fill="#5b4b62" />
-      <circle cx="36" cy="44" r="1.5" fill="#FFFFFF" />
-      <circle cx="60" cy="44" r="1.5" fill="#FFFFFF" />
-      <ellipse cx="30" cy="54" rx="5" ry="3" fill="#ff9aa2" opacity="0.8" />
-      <ellipse cx="70" cy="54" rx="5" ry="3" fill="#ff9aa2" opacity="0.8" />
-      <polygon points="48,52 52,52 50,55" fill="#e07a5f" />
-      <path d="M 45 57 Q 50 62 50 57 Q 50 62 55 57" stroke="#5b4b62" stroke-width="1.5" fill="none" stroke-linecap="round" />
-      <line x1="18" y1="48" x2="30" y2="50" stroke="#5b4b62" stroke-width="1.5" stroke-linecap="round" />
-      <line x1="16" y1="55" x2="29" y2="54" stroke="#5b4b62" stroke-width="1.5" stroke-linecap="round" />
-      <line x1="82" y1="48" x2="70" y2="50" stroke="#5b4b62" stroke-width="1.5" stroke-linecap="round" />
-      <line x1="84" y1="55" x2="71" y2="54" stroke="#5b4b62" stroke-width="1.5" stroke-linecap="round" />
-      <path d="M 32 72 Q 25 95 38 95 L 62 95 Q 75 95 68 72 Z" fill="${color.body}" />
-      <ellipse cx="50" cy="85" rx="12" ry="8" fill="#fff5f8" />
-      <ellipse cx="42" cy="92" rx="4" ry="5" fill="#FFFFFF" />
-      <ellipse cx="58" cy="92" rx="4" ry="5" fill="#FFFFFF" />
-    </svg>
-  `;
-  catYard.insertAdjacentHTML('beforeend', catSvg);
-  catYard.scrollTop = catYard.scrollHeight;
-}
-
-function clearCats() {
-  catYard.innerHTML = '';
-}
-
-function togglePause() {
-  isPaused = !isPaused;
-  if (isPaused) {
-    pauseOverlay.classList.add('active');
-  } else {
-    pauseOverlay.classList.remove('active');
-    lastTime = performance.now();
-  }
-}
-
-function collide(arena, player) {
-  const [m, o] = [player.matrix, player.pos];
-  for (let y = 0; y < m.length; ++y) {
-    for (let x = 0; x < m[y].length; ++x) {
-      if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-function merge(arena, player) {
-  player.matrix.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value !== 0) {
-        arena[y + player.pos.y][x + player.pos.x] = value;
-      }
-    });
-  });
-}
-
-// パティクル生成処理の派手化
-function createSparklesForRow(yIndex) {
-  flashes.push({ y: yIndex, alpha: 1.0 });
-
-  const sparkColors = ['#ffffff', '#ffb7b2', '#ffc6ff', '#bdb2ff', '#a0c4ff', '#9bf6ff', '#caffbf', '#fdffb6'];
-  const shapes = ['star', 'heart', 'circle', 'diamond'];
-  
-  // パーティクル数を35個から100個に大幅増加
-  for (let i = 0; i < 100; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 4 + 1;
-    particles.push({
-      x: Math.random() * 240,
-      y: yIndex * 20 + 10 + (Math.random() * 12 - 6),
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 1.2, // ふんわり舞い上がる
-      size: Math.random() * 6 + 3,
-      color: sparkColors[Math.floor(Math.random() * sparkColors.length)],
-      alpha: 1.0,
-      decay: Math.random() * 0.02 + 0.01,
-      rotation: Math.random() * Math.PI,
-      vRot: (Math.random() - 0.5) * 0.3,
-      shape: shapes[Math.floor(Math.random() * shapes.length)]
-    });
-  }
-}
-
-function arenaSweep() {
-  let rowCount = 1;
-  outer: for (let y = arena.length - 1; y > 0; --y) {
-    for (let x = 0; x < arena[y].length; ++x) {
-      if (arena[y][x] === 0) continue outer;
-    }
-    
-    createSparklesForRow(y);
-    addCat();
-
-    const row = arena.splice(y, 1)[0].fill(0);
-    arena.unshift(row);
-    ++y;
-
-    player.score += rowCount * 10;
-    rowCount *= 2;
-  }
-  updateScore();
-}
-
-function rotate(matrix, dir) {
-  for (let y = 0; y < matrix.length; ++y) {
-    for (let x = 0; x < y; ++x) {
-      [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-    }
-  }
-  if (dir > 0) matrix.forEach(row => row.reverse());
-  else matrix.reverse();
-}
-
-function playerRotate(dir) {
-  const pos = player.pos.x;
-  let offset = 1;
-  rotate(player.matrix, dir);
-  while (collide(arena, player)) {
-    player.pos.x += offset;
-    offset = -(offset + (offset > 0 ? 1 : -1));
-    if (offset > player.matrix[0].length) {
-      rotate(player.matrix, -dir);
-      player.pos.x = pos;
-      return;
-    }
-  }
-}
-
-function playerReset() {
-  const pieces = '1234567';
-  player.matrix = SHAPES[pieces[pieces.length * Math.random() | 0]];
-  player.pos.y = 0;
-  player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
-
-  if (collide(arena, player)) {
-    arena.forEach(row => row.fill(0));
-    player.score = 0;
-    clearCats();
-    updateScore();
-  }
-}
-
-function playerDrop() {
-  player.pos.y++;
-  if (collide(arena, player)) {
-    player.pos.y--;
-    merge(arena, player);
-    playerReset();
-    arenaSweep();
-  }
-  dropCounter = 0;
-}
-
-function playerMove(dir) {
-  player.pos.x += dir;
-  if (collide(arena, player)) {
-    player.pos.x -= dir;
-  }
-}
-
-function draw() {
-  context.fillStyle = '#fff5f8';
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  drawMatrix(arena, {x: 0, y: 0});
-  drawMatrix(player.matrix, player.pos);
-
-  drawEffects();
-}
-
-function drawMatrix(matrix, offset) {
-  matrix.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value !== 0) {
-        context.fillStyle = COLORS[value];
-        context.fillRect(x + offset.x, y + offset.y, 1, 1);
+    <div class="max-w-md w-full flex flex-col gap-6 mt-6">
         
-        context.strokeStyle = '#ffffff';
-        context.lineWidth = 0.08;
-        context.strokeRect(x + offset.x, y + offset.y, 1, 1);
-      }
-    });
-  });
-}
+        <!-- ヘッダーと説明 -->
+        <header class="text-center">
+            <h1 class="text-3xl font-bold text-stone-700 tracking-tight">15 Puzzle</h1>
+            <p class="mt-2 text-stone-500 text-sm">
+                「Start」を押すとシャッフルされ、計測が始まります。
+            </p>
+        </header>
 
-// 描画エフェクトのアップグレード
-function drawEffects() {
-  context.save();
-  context.setTransform(1, 0, 0, 1, 0, 0);
+        <!-- ステータス表示（手数と経過時間） -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 text-center">
+                <div class="text-[10px] text-stone-400 uppercase font-bold tracking-widest mb-1">Moves</div>
+                <div id="move-count" class="text-2xl font-mono font-bold text-blue-600">0</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 text-center">
+                <div class="text-[10px] text-stone-400 uppercase font-bold tracking-widest mb-1">Time</div>
+                <div id="timer" class="text-2xl font-mono font-bold text-blue-600">0:00</div>
+            </div>
+        </div>
 
-  // 消去ラインの多重グラデーションフラッシュ
-  for (let i = flashes.length - 1; i >= 0; i--) {
-    const f = flashes[i];
-    if (!isPaused) f.alpha -= 0.03;
-    if (f.alpha <= 0) {
-      flashes.splice(i, 1);
-    } else {
-      context.save();
-      const grad = context.createLinearGradient(0, f.y * 20, 240, f.y * 20 + 20);
-      grad.addColorStop(0, `rgba(255, 255, 255, ${f.alpha})`);
-      grad.addColorStop(0.5, `rgba(254, 205, 232, ${f.alpha * 0.9})`);
-      grad.addColorStop(1, `rgba(255, 255, 255, ${f.alpha})`);
-      
-      context.fillStyle = grad;
-      context.shadowColor = '#f472b6';
-      context.shadowBlur = 16;
-      context.fillRect(0, f.y * 20 - 2, 240, 24);
-      context.restore();
-    }
-  }
+        <!-- メイン・パズルボード -->
+        <div class="bg-stone-200 p-3 rounded-2xl shadow-inner aspect-square w-full relative">
+            <div id="puzzle-board" class="puzzle-grid h-full w-full">
+                <!-- JavaScriptでタイルが挿入されます -->
+            </div>
+            
+            <!-- クリア時のメッセージ画面 -->
+            <div id="clear-message" class="hidden absolute inset-0 bg-white/95 rounded-2xl flex flex-col items-center justify-center text-center p-6 z-10 animate-in fade-in duration-300">
+                <div class="text-5xl mb-4">🏆</div>
+                <h2 class="text-2xl font-bold text-stone-800">Perfect!</h2>
+                <p id="final-stats" class="text-stone-600 mt-2 text-lg"></p>
+                <button onclick="startGame()" class="mt-6 bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">
+                    Play Again
+                </button>
+            </div>
+        </div>
 
-  // 多彩な形状のキラキラ粒子描画
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    if (!isPaused) {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.04; // 軽やかな重力感
-      p.alpha -= p.decay;
-      p.rotation += p.vRot;
-    }
+        <!-- コントロールセクション -->
+        <div class="flex justify-center mt-2">
+            <button id="start-btn" onclick="startGame()" class="bg-stone-800 text-stone-100 px-10 py-4 rounded-2xl font-bold shadow-xl hover:bg-stone-700 active:scale-95 transition-all w-full md:w-auto">
+                Shuffle & Start
+            </button>
+        </div>
 
-    if (p.alpha <= 0) {
-      particles.splice(i, 1);
-    } else {
-      context.save();
-      context.globalAlpha = p.alpha;
-      context.fillStyle = p.color;
-      context.shadowColor = p.color;
-      context.shadowBlur = 8; // グロー効果（発光）を強調
+    </div>
 
-      context.translate(p.x, p.y);
-      context.rotate(p.rotation);
+    <script>
+        // 基本設定
+        const SIZE = 4;
+        let board = [];
+        let moves = 0;
+        let seconds = 0;
+        let timerInterval = null;
+        let isGameStarted = false;
 
-      const s = p.size;
-      context.beginPath();
+        // 初期表示用の盤面（完成図）を生成
+        function initDisplay() {
+            // 1から15までを並べ、最後を0（空白）にする
+            board = Array.from({length: SIZE * SIZE}, (_, i) => (i + 1) % (SIZE * SIZE));
+            renderBoard();
+        }
 
-      if (p.shape === 'star') {
-        // 4角のキラキラ星
-        context.moveTo(0, -s);
-        context.quadraticCurveTo(0, 0, s, 0);
-        context.quadraticCurveTo(0, 0, 0, s);
-        context.quadraticCurveTo(0, 0, -s, 0);
-        context.quadraticCurveTo(0, 0, 0, -s);
-      } else if (p.shape === 'heart') {
-        // パステルハート
-        context.moveTo(0, s * 0.3);
-        context.bezierCurveTo(-s, -s * 0.5, -s * 0.5, -s, 0, -s * 0.4);
-        context.bezierCurveTo(s * 0.5, -s, s, -s * 0.5, 0, s * 0.3);
-      } else if (p.shape === 'diamond') {
-        // ひし形
-        context.moveTo(0, -s);
-        context.lineTo(s * 0.7, 0);
-        context.lineTo(0, s);
-        context.lineTo(-s * 0.7, 0);
-      } else {
-        // まあるい光のコメット
-        context.arc(0, 0, s * 0.6, 0, Math.PI * 2);
-      }
+        // ゲームを開始する関数（ボタンクリックで実行）
+        function startGame() {
+            // 状態のリセット
+            moves = 0;
+            seconds = 0;
+            isGameStarted = true;
+            document.getElementById('move-count').innerText = moves;
+            document.getElementById('timer').innerText = "0:00";
+            document.getElementById('clear-message').classList.add('hidden');
+            document.getElementById('start-btn').innerText = "Restart Game";
+            
+            // 盤面をシャッフル
+            shuffleBoard();
+            renderBoard();
+            
+            // 【重要】ここでタイマーを開始
+            startTimer();
+        }
 
-      context.closePath();
-      context.fill();
+        // タイマーのカウント処理
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                seconds++;
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                document.getElementById('timer').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }, 1000);
+        }
 
-      context.restore();
-    }
-  }
+        // シャッフルロジック（解ける組み合わせを保証するために、正解からランダムに動かす）
+        function shuffleBoard() {
+            let emptyIdx = board.indexOf(0);
+            for (let i = 0; i < 200; i++) {
+                const neighbors = getNeighbors(emptyIdx);
+                const moveIdx = neighbors[Math.floor(Math.random() * neighbors.length)];
+                [board[emptyIdx], board[moveIdx]] = [board[moveIdx], board[emptyIdx]];
+                emptyIdx = moveIdx;
+            }
+        }
 
-  context.restore();
-}
+        // 移動可能な隣接タイルのインデックスを取得
+        function getNeighbors(idx) {
+            const neighbors = [];
+            const r = Math.floor(idx / SIZE);
+            const c = idx % SIZE;
 
-function updateScore() {
-  scoreElement.innerText = player.score;
-}
+            if (r > 0) neighbors.push(idx - SIZE); // 上
+            if (r < SIZE - 1) neighbors.push(idx + SIZE); // 下
+            if (c > 0) neighbors.push(idx - 1); // 左
+            if (c < SIZE - 1) neighbors.push(idx + 1); // 右
+            
+            return neighbors;
+        }
 
-let dropCounter = 0;
-let dropInterval = 1000;
-let lastTime = 0;
+        // ボードのHTML要素を生成して表示
+        function renderBoard() {
+            const container = document.getElementById('puzzle-board');
+            container.innerHTML = '';
 
-function update(time = 0) {
-  const deltaTime = time - lastTime;
-  lastTime = time;
+            board.forEach((val, idx) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile flex items-center justify-center rounded-xl font-bold text-2xl transition-all duration-150 ';
+                
+                if (val === 0) {
+                    // 空白タイルのデザイン
+                    tile.classList.add('bg-stone-300/40');
+                } else {
+                    // 数字タイルのデザイン
+                    tile.classList.add('bg-white', 'text-stone-700', 'shadow-md', 'border-b-4', 'border-stone-200');
+                    if (isGameStarted) {
+                        tile.classList.add('cursor-pointer', 'hover:bg-blue-50', 'active:translate-y-1', 'active:border-b-0');
+                        tile.onclick = () => handleTileClick(idx);
+                    }
+                    tile.innerText = val;
+                }
+                
+                container.appendChild(tile);
+            });
+        }
 
-  if (!isPaused) {
-    dropCounter += deltaTime;
-    if (dropCounter > dropInterval) {
-      playerDrop();
-    }
-  }
+        // タイルがクリックされた時の動作
+        function handleTileClick(idx) {
+            if (!isGameStarted) return;
 
-  draw();
-  requestAnimationFrame(update);
-}
+            const emptyIdx = board.indexOf(0);
+            const neighbors = getNeighbors(idx);
 
-document.addEventListener('keydown', event => {
-  if (event.keyCode === 80 || event.keyCode === 27) {
-    togglePause();
-    return;
-  }
+            // 空白に隣接していれば移動可能
+            if (neighbors.includes(emptyIdx)) {
+                [board[idx], board[emptyIdx]] = [board[emptyIdx], board[idx]];
+                moves++;
+                document.getElementById('move-count').innerText = moves;
+                renderBoard();
+                checkClear();
+            }
+        }
 
-  if (isPaused) return;
+        // 全てのタイルが正しい位置にあるか確認
+        function checkClear() {
+            const isCleared = board.every((val, i) => {
+                if (i === SIZE * SIZE - 1) return val === 0;
+                return val === i + 1;
+            });
 
-  if (event.keyCode === 37) {
-    playerMove(-1);
-  } else if (event.keyCode === 39) {
-    playerMove(1);
-  } else if (event.keyCode === 40) {
-    playerDrop();
-  } else if (event.keyCode === 38 || event.keyCode === 32) {
-    playerRotate(1);
-    event.preventDefault();
-  }
-});
+            if (isCleared) {
+                isGameStarted = false;
+                clearInterval(timerInterval);
+                
+                const clearMsg = document.getElementById('clear-message');
+                const stats = document.getElementById('final-stats');
+                const timeText = document.getElementById('timer').innerText;
+                stats.innerText = `${moves} Moves / ${timeText}`;
+                clearMsg.classList.remove('hidden');
+            }
+        }
 
-clearCats();
-playerReset();
-updateScore();
-update();
-</script>
+        // ページ読み込み時は完成図だけ見せる
+        window.onload = initDisplay;
+    </script>
 </body>
 </html>
