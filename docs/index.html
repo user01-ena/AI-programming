@@ -170,20 +170,22 @@
       top: 40%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0.5);
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 900;
       color: #fff;
       text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f;
       pointer-events: none;
       opacity: 0;
-      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       z-index: 5;
-      white-space: nowrap;
+      text-align: center;
+      line-height: 1.2;
+      white-space: pre-line;
     }
 
     .combo-popup.show {
       opacity: 1;
-      transform: translate(-50%, -60%) scale(1.2);
+      transform: translate(-50%, -60%) scale(1.25);
     }
 
     .side-panel {
@@ -416,6 +418,10 @@
             <div id="score" class="value">0</div>
           </div>
           <div class="panel-box">
+            <h3>Combo</h3>
+            <div id="combo" class="value" style="color: #ff007f;">0</div>
+          </div>
+          <div class="panel-box">
             <h3>Best</h3>
             <div id="game-best-score" class="value" style="color: #f0a000;">0</div>
           </div>
@@ -642,6 +648,23 @@
             noteOsc.start(now + idx * 0.05);
             noteOsc.stop(now + idx * 0.05 + 0.22);
           });
+        } else if (type === 'combo') {
+          // コンボ音（コンボ数に応じて音階が高くなる）
+          const comboLevel = arguments[1] || 1;
+          const baseFreq = 350 * Math.pow(1.08, Math.min(comboLevel, 12));
+          const notes = [baseFreq, baseFreq * 1.25, baseFreq * 1.5];
+          notes.forEach((freq, idx) => {
+            const noteOsc = audioCtx.createOscillator();
+            const noteGain = audioCtx.createGain();
+            noteOsc.type = 'triangle';
+            noteOsc.frequency.setValueAtTime(freq, now + idx * 0.04);
+            noteGain.gain.setValueAtTime(0.4, now + idx * 0.04);
+            noteGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.18);
+            noteOsc.connect(noteGain);
+            noteGain.connect(audioCtx.destination);
+            noteOsc.start(now + idx * 0.04);
+            noteOsc.stop(now + idx * 0.04 + 0.18);
+          });
         } else if (type === 'gameover') {
           const notes = [440, 392, 349.23, 293.66];
           notes.forEach((freq, idx) => {
@@ -713,6 +736,8 @@
     let isPaused = false;
     let isMobileMode = true;
 
+    let comboCount = 0; // コンボ数カウンター
+
     let currentDifficulty = 'normal';
     let dropCounter = 0;
     let dropInterval = 500;
@@ -743,7 +768,8 @@
       const [m, o] = [player.matrix, player.pos];
       for (let y = 0; y < m.length; ++y) {
         for (let x = 0; x < m[y].length; ++x) {
-          if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+          if (m[y][x] !== 0 &&
+             (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
             return true;
           }
         }
@@ -761,11 +787,20 @@
       });
     }
 
-    function showComboPopup(text) {
+    function showComboPopup(text, combo = 1) {
       const popup = document.getElementById('combo-popup');
       popup.innerText = text;
+      
+      if (combo > 1) {
+        popup.style.textShadow = "0 0 12px #ff007f, 0 0 25px #00f0f0, 0 0 35px #ffea00";
+        popup.style.color = "#ffea00";
+      } else {
+        popup.style.textShadow = "0 0 10px #ff007f, 0 0 20px #ff007f";
+        popup.style.color = "#ffffff";
+      }
+      
       popup.classList.add('show');
-      setTimeout(() => popup.classList.remove('show'), 800);
+      setTimeout(() => popup.classList.remove('show'), 750);
     }
 
     function arenaSweep() {
@@ -787,14 +822,27 @@
       }
 
       if (linesCleared > 0) {
-        playSound('clear');
-        if (linesCleared === 4) {
-          showComboPopup("TETRIS!!");
-        } else if (linesCleared === 3) {
-          showComboPopup("TRIPLE!");
-        } else if (linesCleared === 2) {
-          showComboPopup("DOUBLE!");
+        comboCount++; // 連続ライン消去でコンボ増加
+        
+        // コンボボーナス（2コンボ目以降から加算）
+        const comboBonus = (comboCount > 1) ? (comboCount - 1) * 50 : 0;
+        player.score += comboBonus;
+
+        playSound('combo', comboCount);
+
+        let comboText = "";
+        if (linesCleared === 4) comboText = "TETRIS!";
+        else if (linesCleared === 3) comboText = "TRIPLE!";
+        else if (linesCleared === 2) comboText = "DOUBLE!";
+        else comboText = "SINGLE!";
+
+        if (comboCount > 1) {
+          comboText += `\n${comboCount} COMBO!`;
         }
+        
+        showComboPopup(comboText, comboCount);
+      } else {
+        comboCount = 0; // ラインが消えなかった場合はコンボリセット
       }
       updateScore();
     }
@@ -1008,6 +1056,7 @@
 
       document.getElementById('score').innerText = player.score;
       document.getElementById('lines').innerText = player.lines;
+      document.getElementById('combo').innerText = comboCount > 1 ? comboCount : 0;
       document.getElementById('game-best-score').innerText = highScores[currentDifficulty];
     }
 
@@ -1084,6 +1133,7 @@
       arena.forEach(row => row.fill(0));
       player.score = 0;
       player.lines = 0;
+      comboCount = 0;
       holdPieceType = null;
       nextPieceType = null;
       isGameOver = false;
