@@ -268,8 +268,8 @@
     <!-- 1. メインメニュー画面 -->
     <div id="menu-screen" class="screen">
       <h1>TETRIS</h1>
-      <button class="btn" onclick="startGame()">ゲームスタート</button>
-      <button class="btn btn-secondary" onclick="showSettings()">設定</button>
+      <button class="btn" onclick="playSound('start'); startGame()">ゲームスタート</button>
+      <button class="btn btn-secondary" onclick="playSound('button'); showSettings()">設定</button>
     </div>
 
     <!-- 2. 設定画面 -->
@@ -282,7 +282,7 @@
           <span class="slider"></span>
         </label>
       </div>
-      <button class="btn btn-secondary" onclick="showMenu()">戻る</button>
+      <button class="btn btn-secondary" onclick="playSound('back'); showMenu()">戻る</button>
     </div>
 
     <!-- 3. ゲームプレイ画面 -->
@@ -309,7 +309,7 @@
             <h3>Lines</h3>
             <div id="lines" class="value">0</div>
           </div>
-          <button class="btn btn-secondary" style="padding: 6px; font-size: 12px; margin-bottom: 0;" onclick="togglePause()">Pause</button>
+          <button class="btn btn-secondary" style="padding: 6px; font-size: 12px; margin-bottom: 0;" onclick="playSound('button'); togglePause()">Pause</button>
         </div>
       </div>
 
@@ -339,14 +339,67 @@
         <div id="final-score" style="font-size: 32px; font-weight: bold; color: #00f0f0;">0</div>
         <div style="font-size: 13px; color: #9ca3af; margin-top: 4px;">LINES: <span id="final-lines" style="color: #fff; font-weight: bold;">0</span></div>
       </div>
-      <button id="overlay-resume-btn" class="btn" onclick="togglePause()">再開</button>
-      <button class="btn btn-secondary" onclick="restartGame()">リスタート</button>
-      <button class="btn btn-secondary" onclick="showMenu()">メニューに戻る</button>
+      <button id="overlay-resume-btn" class="btn" onclick="playSound('button'); togglePause()">再開</button>
+      <button class="btn btn-secondary" onclick="playSound('start'); restartGame()">リスタート</button>
+      <button class="btn btn-secondary" onclick="playSound('back'); showMenu()">メニューに戻る</button>
     </div>
 
   </div>
 
   <script>
+    let audioCtx = null;
+
+    // ボタン効果音を再生する関数
+    function playSound(type) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'start') {
+          // スタート・リスタート時の和音フレーズ（音量アップ 0.15 -> 0.5）
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.setValueAtTime(440, now + 0.07);
+          osc.frequency.setValueAtTime(554, now + 0.14);
+          osc.frequency.setValueAtTime(740, now + 0.21);
+          gain.gain.setValueAtTime(0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+          osc.start(now);
+          osc.stop(now + 0.38);
+        } else if (type === 'back') {
+          // 戻るボタンの低音効果音（音量アップ 0.15 -> 0.45）
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(480, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+          gain.gain.setValueAtTime(0.45, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } else {
+          // 通常ボタンの短いタップ音（音量アップ 0.12 -> 0.4）
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(550, now);
+          osc.frequency.exponentialRampToValueAtTime(900, now + 0.06);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        }
+      } catch (e) {
+        console.error("Audio error:", e);
+      }
+    }
+
     /* =========================================================
        ゲームステート & 変数定義
        ========================================================= */
