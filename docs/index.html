@@ -268,8 +268,22 @@
     <!-- 1. メインメニュー画面 -->
     <div id="menu-screen" class="screen">
       <h1>TETRIS</h1>
-      <button class="btn" onclick="playSound('start'); startGame()">ゲームスタート</button>
+      <!-- 最高記録表示ボックス（メニュー） -->
+      <div class="panel-box" style="width: 100%; margin-bottom: 15px;">
+        <h3>Best Score (Overall)</h3>
+        <div id="menu-best-score" class="value" style="font-size: 24px; color: #f0a000;">0</div>
+      </div>
+      <button class="btn" onclick="playSound('start'); showDifficulty()">ゲームスタート</button>
       <button class="btn btn-secondary" onclick="playSound('button'); showSettings()">設定</button>
+    </div>
+
+    <!-- 1.5 難易度選択画面 -->
+    <div id="difficulty-screen" class="screen hidden">
+      <h1>難易度選択</h1>
+      <button class="btn" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="playSound('start'); startGame('easy')">イージー (ゆっくり)</button>
+      <button class="btn" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);" onclick="playSound('start'); startGame('normal')">ノーマル (標準)</button>
+      <button class="btn" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="playSound('start'); startGame('hard')">ハード (高速)</button>
+      <button class="btn btn-secondary" style="margin-top: 10px;" onclick="playSound('back'); showMenu()">戻る</button>
     </div>
 
     <!-- 2. 設定画面 -->
@@ -294,6 +308,10 @@
         <!-- サイド情報パネル -->
         <div class="side-panel">
           <div class="panel-box">
+            <h3>Mode</h3>
+            <div id="diff-label" class="value" style="font-size: 14px;">NORMAL</div>
+          </div>
+          <div class="panel-box">
             <h3>Hold</h3>
             <canvas id="hold-canvas" class="mini-canvas" width="60" height="60"></canvas>
           </div>
@@ -304,6 +322,10 @@
           <div class="panel-box">
             <h3>Score</h3>
             <div id="score" class="value">0</div>
+          </div>
+          <div class="panel-box">
+            <h3>Best</h3>
+            <div id="game-best-score" class="value" style="color: #f0a000;">0</div>
           </div>
           <div class="panel-box">
             <h3>Lines</h3>
@@ -335,9 +357,11 @@
       <h2 id="overlay-title">PAUSED</h2>
       <!-- ゲームオーバー時の最終スコア表示ボックス -->
       <div id="overlay-score-box" class="hidden" style="margin-bottom: 15px; text-align: center;">
+        <div style="font-size: 13px; color: #9ca3af; font-weight: bold; margin-bottom: 6px;">MODE: <span id="final-diff" style="color: #00f0f0; font-weight: bold;">NORMAL</span></div>
         <div style="font-size: 14px; color: #9ca3af; font-weight: bold;">FINAL SCORE</div>
         <div id="final-score" style="font-size: 32px; font-weight: bold; color: #00f0f0;">0</div>
-        <div style="font-size: 13px; color: #9ca3af; margin-top: 4px;">LINES: <span id="final-lines" style="color: #fff; font-weight: bold;">0</span></div>
+        <div style="font-size: 13px; color: #9ca3af; margin-top: 4px;">BEST SCORE: <span id="final-best" style="color: #f0a000; font-weight: bold;">0</span></div>
+        <div style="font-size: 13px; color: #9ca3af; margin-top: 2px;">LINES: <span id="final-lines" style="color: #fff; font-weight: bold;">0</span></div>
       </div>
       <button id="overlay-resume-btn" class="btn" onclick="playSound('button'); togglePause()">再開</button>
       <button class="btn btn-secondary" onclick="playSound('start'); restartGame()">リスタート</button>
@@ -477,10 +501,18 @@
     let isPaused = false;
     let isMobileMode = true;
 
+    let currentDifficulty = 'normal';
     let dropCounter = 0;
-    let dropInterval = 1000;
+    let dropInterval = 500;
     let lastTime = 0;
     let animId = null;
+
+    // 難易度ごとの最高記録データ
+    let highScores = {
+      easy: 0,
+      normal: 0,
+      hard: 0
+    };
 
     /* =========================================================
        テトリミノ定義 & 行列処理
@@ -707,8 +739,14 @@
     }
 
     function updateScore() {
+      // 現在の難易度のハイスコア更新判定
+      if (player.score > highScores[currentDifficulty]) {
+        highScores[currentDifficulty] = player.score;
+      }
+
       document.getElementById('score').innerText = player.score;
       document.getElementById('lines').innerText = player.lines;
+      document.getElementById('game-best-score').innerText = highScores[currentDifficulty];
     }
 
     /* =========================================================
@@ -716,10 +754,21 @@
        ========================================================= */
     function showMenu() {
       cancelAnimationFrame(animId);
+      
+      // 全モードの中での最高記録を表示
+      const overallBest = Math.max(highScores.easy, highScores.normal, highScores.hard);
+      document.getElementById('menu-best-score').innerText = overallBest;
+
       document.getElementById('menu-screen').classList.remove('hidden');
+      document.getElementById('difficulty-screen').classList.add('hidden');
       document.getElementById('settings-screen').classList.add('hidden');
       document.getElementById('game-screen').classList.add('hidden');
       document.getElementById('overlay').classList.add('hidden');
+    }
+
+    function showDifficulty() {
+      document.getElementById('menu-screen').classList.add('hidden');
+      document.getElementById('difficulty-screen').classList.remove('hidden');
     }
 
     function showSettings() {
@@ -746,8 +795,22 @@
       }
     }
 
-    function startGame() {
+    function startGame(difficulty = 'normal') {
+      currentDifficulty = difficulty;
+      if (difficulty === 'easy') {
+        dropInterval = 1000; // 1秒ごとに1マス落下
+        document.getElementById('diff-label').innerText = 'EASY';
+      } else if (difficulty === 'normal') {
+        dropInterval = 500;  // 0.5秒ごとに1マス落下
+        document.getElementById('diff-label').innerText = 'NORMAL';
+      } else if (difficulty === 'hard') {
+        dropInterval = 200;  // 0.2秒ごとに1マス落下（高速）
+        document.getElementById('diff-label').innerText = 'HARD';
+      }
+
+      document.getElementById('game-best-score').innerText = highScores[currentDifficulty];
       document.getElementById('menu-screen').classList.add('hidden');
+      document.getElementById('difficulty-screen').classList.add('hidden');
       document.getElementById('game-screen').classList.remove('hidden');
       applyMobileMode();
       restartGame();
@@ -797,9 +860,17 @@
         // ゲームオーバー画面（再開ボタンを非表示、スコア表示を有効化）
         resumeBtn.classList.add('hidden');
         const finalScoreElem = document.getElementById('final-score');
+        const finalBestElem = document.getElementById('final-best');
         const finalLinesElem = document.getElementById('final-lines');
+        const finalDiffElem = document.getElementById('final-diff');
+        
         if (finalScoreElem) finalScoreElem.innerText = player.score;
+        if (finalBestElem) finalBestElem.innerText = highScores[currentDifficulty];
         if (finalLinesElem) finalLinesElem.innerText = player.lines;
+        if (finalDiffElem) {
+          const diffMap = { 'easy': 'EASY', 'normal': 'NORMAL', 'hard': 'HARD' };
+          finalDiffElem.innerText = diffMap[currentDifficulty] || currentDifficulty.toUpperCase();
+        }
         if (scoreBox) scoreBox.classList.remove('hidden');
       }
       document.getElementById('overlay').classList.remove('hidden');
