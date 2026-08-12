@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>シンプル テトリス</title>
+  <title>ネオン テトリス</title>
   <style>
-    /* =========================================================
-       全体デザイン・レイアウト (CSS)
-       ========================================================= */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -18,7 +15,7 @@
     }
 
     body {
-      background-color: #121218;
+      background: radial-gradient(circle at center, #1b1b2f 0%, #080811 100%);
       color: #ffffff;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
@@ -26,59 +23,61 @@
       align-items: center;
       min-height: 100vh;
       padding: 10px;
+      overflow: hidden;
     }
 
     .app-container {
       position: relative;
       width: 100%;
       max-width: 420px;
-      background-color: #1e1e2a;
-      border-radius: 16px;
+      background: rgba(30, 30, 46, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
       padding: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.05);
       display: flex;
       flex-direction: column;
       align-items: center;
       overflow: hidden;
     }
 
-    /* タイトル & 共通ボタン */
     h1 {
-      font-size: 28px;
+      font-size: 32px;
+      font-weight: 800;
       color: #00f0f0;
-      letter-spacing: 2px;
+      letter-spacing: 4px;
       margin-bottom: 15px;
-      text-shadow: 0 0 10px rgba(0, 240, 240, 0.5);
+      text-shadow: 0 0 12px rgba(0, 240, 240, 0.6), 0 0 25px rgba(0, 240, 240, 0.3);
       text-align: center;
     }
 
     .btn {
-      background: linear-gradient(135deg, #00d2ff, #0072ff);
+      background: linear-gradient(135deg, #00f0f0, #0072ff);
       color: #fff;
       border: none;
-      padding: 12px 24px;
+      padding: 14px 24px;
       font-size: 16px;
       font-weight: bold;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 114, 255, 0.3);
-      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       width: 100%;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       text-align: center;
     }
 
     .btn:active {
-      transform: scale(0.98);
+      transform: scale(0.96);
       opacity: 0.9;
     }
 
     .btn-secondary {
-      background: linear-gradient(135deg, #4b5563, #1f2937);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      background: linear-gradient(135deg, #374151, #1f2937);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
-    /* メニュー画面 & 設定画面 */
     .screen {
       width: 100%;
       display: flex;
@@ -95,17 +94,18 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      background: #2a2a3c;
+      background: rgba(42, 42, 60, 0.8);
       padding: 14px 18px;
-      border-radius: 10px;
-      margin-bottom: 15px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .switch {
       position: relative;
       display: inline-block;
-      width: 50px;
-      height: 26px;
+      width: 52px;
+      height: 28px;
     }
 
     .switch input {
@@ -120,14 +120,14 @@
       top: 0; left: 0; right: 0; bottom: 0;
       background-color: #4b5563;
       transition: .3s;
-      border-radius: 26px;
+      border-radius: 28px;
     }
 
     .slider:before {
       position: absolute;
       content: "";
-      height: 20px;
-      width: 20px;
+      height: 22px;
+      width: 22px;
       left: 3px;
       bottom: 3px;
       background-color: white;
@@ -137,84 +137,113 @@
 
     input:checked + .slider {
       background-color: #00f0f0;
+      box-shadow: 0 0 10px rgba(0, 240, 240, 0.5);
     }
 
     input:checked + .slider:before {
       transform: translateX(24px);
     }
 
-    /* ゲーム画面 レイアウト */
     .game-layout {
       display: flex;
-      gap: 15px;
+      gap: 12px;
       justify-content: center;
       align-items: flex-start;
       width: 100%;
     }
 
-    /* キャンバスデザイン */
+    .canvas-container {
+      position: relative;
+    }
+
     #tetris {
-      border: 3px solid #3a3a50;
-      background-color: #0d0d14;
-      border-radius: 6px;
-      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+      border: 3px solid #2a2a40;
+      background-color: #080811;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 0, 0, 0.9);
+      display: block;
+    }
+
+    /* 消去コンボ時のポップアップテキスト演出 */
+    .combo-popup {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.5);
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 5;
+      white-space: nowrap;
+    }
+
+    .combo-popup.show {
+      opacity: 1;
+      transform: translate(-50%, -60%) scale(1.2);
     }
 
     .side-panel {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      width: 100px;
+      gap: 10px;
+      width: 105px;
     }
 
     .panel-box {
-      background: #2a2a3c;
+      background: rgba(42, 42, 60, 0.8);
       padding: 8px;
-      border-radius: 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
       text-align: center;
     }
 
     .panel-box h3 {
-      font-size: 11px;
+      font-size: 10px;
       color: #9ca3af;
+      letter-spacing: 1px;
       text-transform: uppercase;
       margin-bottom: 4px;
     }
 
     .panel-box .value {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
       color: #00f0f0;
+      text-shadow: 0 0 8px rgba(0, 240, 240, 0.4);
     }
 
     .mini-canvas {
-      background: #0d0d14;
-      border-radius: 4px;
-      border: 1px solid #3a3a50;
+      background: #080811;
+      border-radius: 6px;
+      border: 1px solid #2a2a40;
       display: block;
       margin: 0 auto;
     }
 
-    /* タッチ用コントロールボタン */
     .touch-controls {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
       width: 100%;
-      margin-top: 15px;
+      margin-top: 14px;
     }
 
     .t-btn {
-      background: #2a2a3c;
+      background: linear-gradient(145deg, #2a2a3c, #1f1f2e);
       color: #fff;
-      border: 1px solid #3a3a50;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       padding: 14px 0;
       font-size: 16px;
       font-weight: bold;
-      border-radius: 8px;
+      border-radius: 10px;
       text-align: center;
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: background 0.1s;
     }
 
     .t-btn:active {
@@ -223,16 +252,15 @@
     }
 
     .t-btn-accent {
-      background: #0072ff;
-      border-color: #0072ff;
+      background: linear-gradient(135deg, #0072ff, #00c6ff);
+      border-color: #00c6ff;
     }
 
     .t-btn-drop {
-      background: #e11d48;
-      border-color: #e11d48;
+      background: linear-gradient(135deg, #e11d48, #f43f5e);
+      border-color: #f43f5e;
     }
 
-    /* キーボード操作説明 */
     .controls-info {
       font-size: 11px;
       color: #9ca3af;
@@ -241,22 +269,24 @@
       line-height: 1.5;
     }
 
-    /* オーバーレイ（ゲームオーバー / ポーズ） */
     .overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(18, 18, 24, 0.85);
+      background: rgba(10, 10, 18, 0.9);
+      backdrop-filter: blur(8px);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      border-radius: 16px;
+      border-radius: 20px;
       z-index: 10;
     }
 
     .overlay h2 {
-      font-size: 24px;
+      font-size: 28px;
+      font-weight: 900;
       color: #ff4d4d;
+      text-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
       margin-bottom: 15px;
     }
   </style>
@@ -268,10 +298,9 @@
     <!-- 1. メインメニュー画面 -->
     <div id="menu-screen" class="screen">
       <h1>TETRIS</h1>
-      <!-- 最高記録表示ボックス（メニュー） -->
-      <div class="panel-box" style="width: 100%; margin-bottom: 15px;">
+      <div class="panel-box" style="width: 100%; margin-bottom: 16px; padding: 12px;">
         <h3>Best Score (Overall)</h3>
-        <div id="menu-best-score" class="value" style="font-size: 24px; color: #f0a000;">0</div>
+        <div id="menu-best-score" class="value" style="font-size: 26px; color: #f0a000;">0</div>
       </div>
       <button class="btn" onclick="playSound('start'); showDifficulty()">ゲームスタート</button>
       <button class="btn btn-secondary" onclick="playSound('button'); showSettings()">設定</button>
@@ -283,12 +312,19 @@
       <button class="btn" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="playSound('start'); startGame('easy')">イージー (ゆっくり)</button>
       <button class="btn" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);" onclick="playSound('start'); startGame('normal')">ノーマル (標準)</button>
       <button class="btn" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="playSound('start'); startGame('hard')">ハード (高速)</button>
-      <button class="btn btn-secondary" style="margin-top: 10px;" onclick="playSound('back'); showMenu()">戻る</button>
+      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="playSound('back'); showMenu()">戻る</button>
     </div>
 
     <!-- 2. 設定画面 -->
     <div id="settings-screen" class="screen hidden">
       <h1>設定</h1>
+      <div class="setting-item">
+        <span>BGM (音楽)</span>
+        <label class="switch">
+          <input type="checkbox" id="bgm-toggle" checked onchange="toggleBgmMode(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
       <div class="setting-item">
         <span>モバイルモード (タッチ操作)</span>
         <label class="switch">
@@ -302,14 +338,17 @@
     <!-- 3. ゲームプレイ画面 -->
     <div id="game-screen" class="screen hidden">
       <div class="game-layout">
-        <!-- メインキャンバス -->
-        <canvas id="tetris" width="200" height="400"></canvas>
+        <!-- キャンバスエリア & ポップアップ -->
+        <div class="canvas-container">
+          <div id="combo-popup" class="combo-popup">TETRIS!</div>
+          <canvas id="tetris" width="200" height="400"></canvas>
+        </div>
 
         <!-- サイド情報パネル -->
         <div class="side-panel">
           <div class="panel-box">
             <h3>Mode</h3>
-            <div id="diff-label" class="value" style="font-size: 14px;">NORMAL</div>
+            <div id="diff-label" class="value" style="font-size: 13px;">NORMAL</div>
           </div>
           <div class="panel-box">
             <h3>Hold</h3>
@@ -331,7 +370,7 @@
             <h3>Lines</h3>
             <div id="lines" class="value">0</div>
           </div>
-          <button class="btn btn-secondary" style="padding: 6px; font-size: 12px; margin-bottom: 0;" onclick="playSound('button'); togglePause()">Pause</button>
+          <button class="btn btn-secondary" style="padding: 8px; font-size: 12px; margin-bottom: 0;" onclick="playSound('button'); togglePause()">Pause</button>
         </div>
       </div>
 
@@ -355,7 +394,6 @@
     <!-- 4. オーバーレイ (ゲームオーバー/ポーズ) -->
     <div id="overlay" class="overlay hidden">
       <h2 id="overlay-title">PAUSED</h2>
-      <!-- ゲームオーバー時の最終スコア表示ボックス -->
       <div id="overlay-score-box" class="hidden" style="margin-bottom: 15px; text-align: center;">
         <div style="font-size: 13px; color: #9ca3af; font-weight: bold; margin-bottom: 6px;">MODE: <span id="final-diff" style="color: #00f0f0; font-weight: bold;">NORMAL</span></div>
         <div style="font-size: 14px; color: #9ca3af; font-weight: bold;">FINAL SCORE</div>
@@ -372,8 +410,97 @@
 
   <script>
     let audioCtx = null;
+    let isBgmEnabled = true;
+    let bgmIntervalId = null;
+    let bgmNoteIndex = 0;
 
-    // ボタン効果音を再生する関数
+    // 新しい軽快なサイバー風8bit BGM（主旋律 + ベースラインのデュアルノート構造）
+    const BGM_NOTES = [
+      // [主旋律周波数, ベース周波数, 長さ]
+      [329.63, 164.81, 1], [392.00, 164.81, 1], [493.88, 196.00, 1], [440.00, 196.00, 1],
+      [392.00, 164.81, 1], [329.63, 164.81, 1], [293.66, 146.83, 2],
+      [349.23, 146.83, 1], [440.00, 174.61, 1], [523.25, 174.61, 1], [493.88, 164.81, 1],
+      [440.00, 146.83, 1], [392.00, 130.81, 1], [329.63, 164.81, 2],
+
+      [329.63, 164.81, 1], [493.88, 164.81, 1], [587.33, 196.00, 1], [523.25, 196.00, 1],
+      [493.88, 164.81, 1], [392.00, 164.81, 1], [440.00, 220.00, 2],
+      [349.23, 174.61, 1], [392.00, 196.00, 1], [440.00, 220.00, 1], [493.88, 164.81, 1],
+      [329.63, 164.81, 2], [329.63, 164.81, 2]
+    ];
+
+    function stopBGM() {
+      if (bgmIntervalId !== null) {
+        clearTimeout(bgmIntervalId);
+        bgmIntervalId = null;
+      }
+    }
+
+    function toggleBgmMode(enabled) {
+      isBgmEnabled = enabled;
+      if (!isBgmEnabled) {
+        stopBGM();
+      } else if (!isPaused && !isGameOver && !document.getElementById('game-screen').classList.contains('hidden')) {
+        startBGM();
+      }
+    }
+
+    function startBGM() {
+      stopBGM();
+      if (!isBgmEnabled) return;
+
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      bgmNoteIndex = 0;
+      const tempoMs = 135;
+
+      function playNextNote() {
+        if (!isBgmEnabled || isPaused || isGameOver) return;
+
+        const [melodyFreq, bassFreq, duration] = BGM_NOTES[bgmNoteIndex];
+        const noteDurationSec = (duration * tempoMs) / 1000;
+
+        const now = audioCtx.currentTime;
+
+        // 主旋律オシレーター（メロディ）
+        if (melodyFreq > 0) {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(melodyFreq, now);
+          gain.gain.setValueAtTime(0.025, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + noteDurationSec * 0.85);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + noteDurationSec * 0.85);
+        }
+
+        // 低音オシレーター（ベースライン）
+        if (bassFreq > 0) {
+          const bassOsc = audioCtx.createOscillator();
+          const bassGain = audioCtx.createGain();
+          bassOsc.type = 'triangle';
+          bassOsc.frequency.setValueAtTime(bassFreq, now);
+          bassGain.gain.setValueAtTime(0.035, now);
+          bassGain.gain.exponentialRampToValueAtTime(0.001, now + noteDurationSec * 0.9);
+          bassOsc.connect(bassGain);
+          bassGain.connect(audioCtx.destination);
+          bassOsc.start(now);
+          bassOsc.stop(now + noteDurationSec * 0.9);
+        }
+
+        bgmNoteIndex = (bgmNoteIndex + 1) % BGM_NOTES.length;
+        bgmIntervalId = setTimeout(playNextNote, duration * tempoMs);
+      }
+
+      playNextNote();
+    }
+
     function playSound(type) {
       try {
         if (!audioCtx) {
@@ -390,7 +517,6 @@
         gain.connect(audioCtx.destination);
 
         if (type === 'start') {
-          // スタート・リスタート時の和音フレーズ（音量アップ 0.15 -> 0.5）
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(320, now);
           osc.frequency.setValueAtTime(440, now + 0.07);
@@ -400,8 +526,43 @@
           gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
           osc.start(now);
           osc.stop(now + 0.38);
+        } else if (type === 'land') {
+          // ブロックを設置・固定したときの心地よい着地サウンド（コンッ！）
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(260, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.06);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } else if (type === 'move') {
+          // 移動音
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        } else if (type === 'rotate') {
+          // 回転音
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(450, now);
+          osc.frequency.exponentialRampToValueAtTime(750, now + 0.06);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } else if (type === 'harddrop') {
+          // ハードドロップ音（重低音インパクト）
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+          gain.gain.setValueAtTime(0.55, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.start(now);
+          osc.stop(now + 0.1);
         } else if (type === 'back') {
-          // 戻るボタンの低音効果音（音量アップ 0.15 -> 0.45）
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(480, now);
           osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
@@ -410,8 +571,7 @@
           osc.start(now);
           osc.stop(now + 0.1);
         } else if (type === 'clear') {
-          // ライン消去時の華やかなチャイム効果音
-          const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 -> E5 -> G5 -> C6
+          const notes = [523.25, 659.25, 783.99, 1046.50];
           notes.forEach((freq, idx) => {
             const noteOsc = audioCtx.createOscillator();
             const noteGain = audioCtx.createGain();
@@ -425,8 +585,7 @@
             noteOsc.stop(now + idx * 0.05 + 0.22);
           });
         } else if (type === 'gameover') {
-          // ゲームオーバー時の下落効果音（悲しげな下降トーン）
-          const notes = [440, 392, 349.23, 293.66]; // A4 -> G4 -> F4 -> D4
+          const notes = [440, 392, 349.23, 293.66];
           notes.forEach((freq, idx) => {
             const noteOsc = audioCtx.createOscillator();
             const noteGain = audioCtx.createGain();
@@ -445,7 +604,6 @@
             noteOsc.stop(startTime + duration);
           });
         } else {
-          // 通常ボタンの短いタップ音（音量アップ 0.12 -> 0.4）
           osc.type = 'sine';
           osc.frequency.setValueAtTime(550, now);
           osc.frequency.exponentialRampToValueAtTime(900, now + 0.06);
@@ -459,9 +617,6 @@
       }
     }
 
-    /* =========================================================
-       ゲームステート & 変数定義
-       ========================================================= */
     const canvas = document.getElementById('tetris');
     const context = canvas.getContext('2d');
     const holdCanvas = document.getElementById('hold-canvas');
@@ -474,16 +629,15 @@
     holdContext.scale(15, 15);
     nextContext.scale(15, 15);
 
-    // テトリミノの色定義
     const COLORS = [
       null,
       '#00f0f0', // I (シアン)
-      '#0000f0', // J (ブルー)
-      '#f0a000', // L (オレンジ)
-      '#f0f000', // O (イエロー)
-      '#00f000', // S (グリーン)
-      '#a000f0', // T (パープル)
-      '#f00000'  // Z (レッド)
+      '#0055ff', // J (ブルー)
+      '#ffaa00', // L (オレンジ)
+      '#ffea00', // O (イエロー)
+      '#00e676', // S (グリーン)
+      '#d500f9', // T (パープル)
+      '#ff1744'  // Z (レッド)
     ];
 
     let arena = createMatrix(10, 20);
@@ -507,16 +661,8 @@
     let lastTime = 0;
     let animId = null;
 
-    // 難易度ごとの最高記録データ
-    let highScores = {
-      easy: 0,
-      normal: 0,
-      hard: 0
-    };
+    let highScores = { easy: 0, normal: 0, hard: 0 };
 
-    /* =========================================================
-       テトリミノ定義 & 行列処理
-       ========================================================= */
     function createPiece(type) {
       switch(type) {
         case 'I': return [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]];
@@ -535,7 +681,6 @@
       return matrix;
     }
 
-    // 衝突判定
     function collide(arena, player) {
       const [m, o] = [player.matrix, player.pos];
       for (let y = 0; y < m.length; ++y) {
@@ -548,7 +693,6 @@
       return false;
     }
 
-    // ブロックの固定
     function merge(arena, player) {
       player.matrix.forEach((row, y) => {
         row.forEach((value, x) => {
@@ -559,10 +703,17 @@
       });
     }
 
-    // ライン消去判定
+    function showComboPopup(text) {
+      const popup = document.getElementById('combo-popup');
+      popup.innerText = text;
+      popup.classList.add('show');
+      setTimeout(() => popup.classList.remove('show'), 800);
+    }
+
     function arenaSweep() {
+      let linesCleared = 0;
       let rowCount = 1;
-      let cleared = false;
+
       outer: for (let y = arena.length - 1; y >= 0; --y) {
         for (let x = 0; x < arena[y].length; ++x) {
           if (arena[y][x] === 0) continue outer;
@@ -571,18 +722,25 @@
         arena.unshift(row);
         ++y;
 
-        player.score += rowCount * 10;
+        player.score += rowCount * 100;
         player.lines += 1;
         rowCount *= 2;
-        cleared = true;
+        linesCleared++;
       }
-      if (cleared) {
+
+      if (linesCleared > 0) {
         playSound('clear');
+        if (linesCleared === 4) {
+          showComboPopup("TETRIS!!");
+        } else if (linesCleared === 3) {
+          showComboPopup("TRIPLE!");
+        } else if (linesCleared === 2) {
+          showComboPopup("DOUBLE!");
+        }
       }
       updateScore();
     }
 
-    // ブロック回転
     function rotate(matrix, dir) {
       for (let y = 0; y < matrix.length; ++y) {
         for (let x = 0; x < y; ++x) {
@@ -593,14 +751,13 @@
       else matrix.reverse();
     }
 
-    /* =========================================================
-       プレイヤー操作・アクション
-       ========================================================= */
     function playerMove(dir) {
       if (isGameOver || isPaused) return;
       player.pos.x += dir;
       if (collide(arena, player)) {
         player.pos.x -= dir;
+      } else {
+        playSound('move');
       }
     }
 
@@ -618,6 +775,7 @@
           return;
         }
       }
+      playSound('rotate');
     }
 
     function playerDrop() {
@@ -625,27 +783,33 @@
       player.pos.y++;
       if (collide(arena, player)) {
         player.pos.y--;
+        playSound('land');
         merge(arena, player);
         playerReset();
         arenaSweep();
+      } else {
+        player.score += 1; // ソフトドロップ加点
+        updateScore();
       }
       dropCounter = 0;
     }
 
-    // ハードドロップ（一気に一番下へ）
     function playerHardDrop() {
       if (isGameOver || isPaused) return;
+      let dropDistance = 0;
       while (!collide(arena, player)) {
         player.pos.y++;
+        dropDistance++;
       }
       player.pos.y--;
+      player.score += dropDistance * 2; // ハードドロップ加点
+      playSound('harddrop');
       merge(arena, player);
       playerReset();
       arenaSweep();
       dropCounter = 0;
     }
 
-    // HOLD処理
     function playerHold() {
       if (isGameOver || isPaused || !canHold) return;
 
@@ -663,6 +827,7 @@
       }
 
       canHold = false;
+      playSound('rotate');
       drawHold();
     }
 
@@ -693,21 +858,38 @@
       }
     }
 
-    /* =========================================================
-       描画（レンダリング）処理
-       ========================================================= */
+    function getGhostPosition() {
+      const ghost = {
+        pos: { x: player.pos.x, y: player.pos.y },
+        matrix: player.matrix
+      };
+
+      while (!collide(arena, ghost)) {
+        ghost.pos.y++;
+      }
+      ghost.pos.y--;
+      return ghost.pos;
+    }
+
     function draw() {
-      context.fillStyle = '#0d0d14';
+      context.fillStyle = '#080811';
       context.fillRect(0, 0, canvas.width, canvas.height);
 
+      // 固定されたブロックの描画
       drawMatrix(arena, {x: 0, y: 0}, context);
+
       if (player.matrix) {
+        // ゴースト（落下予測影）の描画
+        const ghostPos = getGhostPosition();
+        drawMatrix(player.matrix, ghostPos, context, true);
+
+        // 操作中ブロックの描画
         drawMatrix(player.matrix, player.pos, context);
       }
     }
 
     function drawHold() {
-      holdContext.fillStyle = '#0d0d14';
+      holdContext.fillStyle = '#080811';
       holdContext.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
       if (holdPieceType) {
         const matrix = createPiece(holdPieceType);
@@ -716,7 +898,7 @@
     }
 
     function drawNext() {
-      nextContext.fillStyle = '#0d0d14';
+      nextContext.fillStyle = '#080811';
       nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
       if (nextPieceType) {
         const matrix = createPiece(nextPieceType);
@@ -724,22 +906,42 @@
       }
     }
 
-    function drawMatrix(matrix, offset, ctx) {
+    function drawMatrix(matrix, offset, ctx, isGhost = false) {
       matrix.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value !== 0) {
-            ctx.fillStyle = COLORS[value];
-            ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
-            ctx.lineWidth = 0.08;
-            ctx.strokeStyle = '#ffffff';
-            ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
+            const posX = x + offset.x;
+            const posY = y + offset.y;
+
+            if (isGhost) {
+              // ゴーストブロック（半透明の枠線表示）
+              ctx.strokeStyle = COLORS[value];
+              ctx.lineWidth = 0.08;
+              ctx.strokeRect(posX + 0.1, posY + 0.1, 0.8, 0.8);
+            } else {
+              // 立体感のある光沢ブロック描画
+              ctx.fillStyle = COLORS[value];
+              ctx.fillRect(posX, posY, 1, 1);
+
+              // 内側のハイライト（立体光沢）
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+              ctx.fillRect(posX, posY, 1, 0.15);
+              ctx.fillRect(posX, posY, 0.15, 1);
+
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+              ctx.fillRect(posX, posY + 0.85, 1, 0.15);
+              ctx.fillRect(posX + 0.85, posY, 0.15, 1);
+
+              ctx.lineWidth = 0.05;
+              ctx.strokeStyle = '#000000';
+              ctx.strokeRect(posX, posY, 1, 1);
+            }
           }
         });
       });
     }
 
     function updateScore() {
-      // 現在の難易度のハイスコア更新判定
       if (player.score > highScores[currentDifficulty]) {
         highScores[currentDifficulty] = player.score;
       }
@@ -749,13 +951,10 @@
       document.getElementById('game-best-score').innerText = highScores[currentDifficulty];
     }
 
-    /* =========================================================
-       画面遷移 & UIコントロール
-       ========================================================= */
     function showMenu() {
       cancelAnimationFrame(animId);
+      stopBGM();
       
-      // 全モードの中での最高記録を表示
       const overallBest = Math.max(highScores.easy, highScores.normal, highScores.hard);
       document.getElementById('menu-best-score').innerText = overallBest;
 
@@ -785,7 +984,6 @@
       const controls = document.getElementById('touch-controls');
       const controlsInfo = document.getElementById('controls-info');
 
-      // モバイルモードONの時はタッチボタンを表示し、キーガイドを隠す
       if (isMobileMode) {
         controls.style.display = 'grid';
         controlsInfo.style.display = 'none';
@@ -798,13 +996,13 @@
     function startGame(difficulty = 'normal') {
       currentDifficulty = difficulty;
       if (difficulty === 'easy') {
-        dropInterval = 1000; // 1秒ごとに1マス落下
+        dropInterval = 1000;
         document.getElementById('diff-label').innerText = 'EASY';
       } else if (difficulty === 'normal') {
-        dropInterval = 500;  // 0.5秒ごとに1マス落下
+        dropInterval = 500;
         document.getElementById('diff-label').innerText = 'NORMAL';
       } else if (difficulty === 'hard') {
-        dropInterval = 200;  // 0.2秒ごとに1マス落下（高速）
+        dropInterval = 200;
         document.getElementById('diff-label').innerText = 'HARD';
       }
 
@@ -830,6 +1028,8 @@
       drawHold();
       playerReset();
 
+      startBGM();
+
       lastTime = performance.now();
       cancelAnimationFrame(animId);
       update();
@@ -839,10 +1039,12 @@
       if (isGameOver) return;
       isPaused = !isPaused;
       if (isPaused) {
+        stopBGM();
         showOverlay("PAUSED", true);
       } else {
         document.getElementById('overlay').classList.add('hidden');
         lastTime = performance.now();
+        startBGM();
         update();
       }
     }
@@ -853,11 +1055,10 @@
       const scoreBox = document.getElementById('overlay-score-box');
       
       if (showResume) {
-        // ポーズ画面（再開ボタンを表示、スコア表示は非表示）
         resumeBtn.classList.remove('hidden');
         if (scoreBox) scoreBox.classList.add('hidden');
       } else {
-        // ゲームオーバー画面（再開ボタンを非表示、スコア表示を有効化）
+        stopBGM();
         resumeBtn.classList.add('hidden');
         const finalScoreElem = document.getElementById('final-score');
         const finalBestElem = document.getElementById('final-best');
@@ -876,9 +1077,6 @@
       document.getElementById('overlay').classList.remove('hidden');
     }
 
-    /* =========================================================
-       ゲームループ
-       ========================================================= */
     function update(time = 0) {
       if (isPaused || isGameOver) return;
 
@@ -894,29 +1092,22 @@
       animId = requestAnimationFrame(update);
     }
 
-    /* =========================================================
-       キーボード操作
-       ========================================================= */
     document.addEventListener('keydown', event => {
       if (document.getElementById('game-screen').classList.contains('hidden')) return;
 
-      // スペースキーや矢印キーによる画面スクロールを防ぐ
       if ([32, 37, 38, 39, 40].includes(event.keyCode)) {
         event.preventDefault();
       }
 
-      if (event.keyCode === 37) playerMove(-1);         // 左矢印
-      else if (event.keyCode === 39) playerMove(1);     // 右矢印
-      else if (event.keyCode === 40) playerDrop();       // 下矢印
-      else if (event.keyCode === 38) playerRotate(1);   // 上矢印
-      else if (event.keyCode === 32) playerHardDrop(); // Space
-      else if (event.keyCode === 67 || event.keyCode === 16) playerHold(); // C or Shift
-      else if (event.keyCode === 80) togglePause();     // P
+      if (event.keyCode === 37) playerMove(-1);
+      else if (event.keyCode === 39) playerMove(1);
+      else if (event.keyCode === 40) playerDrop();
+      else if (event.keyCode === 38) playerRotate(1);
+      else if (event.keyCode === 32) playerHardDrop();
+      else if (event.keyCode === 67 || event.keyCode === 16) playerHold();
+      else if (event.keyCode === 80) togglePause();
     });
 
-    /* =========================================================
-       スマホ・タッチボタンイベント（長押し対応）
-       ========================================================= */
     function setupTouchButton(id, action) {
       const btn = document.getElementById(id);
       let intervalId = null;
@@ -949,7 +1140,6 @@
       btn.addEventListener('mousedown', trigger);
     }
 
-    // 各タッチボタンのバインド
     setupTouchButton('btn-left', () => playerMove(-1));
     setupTouchButton('btn-right', () => playerMove(1));
     setupTouchButton('btn-down', () => playerDrop());
