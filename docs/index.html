@@ -289,6 +289,25 @@
       text-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
       margin-bottom: 15px;
     }
+
+    .overlay .btn {
+      width: 220px;
+      max-width: 85%;
+      margin-bottom: 10px;
+    }
+
+    /* 遊び方画面のスクロールバー装飾 */
+    .how-to-content::-webkit-scrollbar {
+      width: 6px;
+    }
+    .how-to-content::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+    .how-to-content::-webkit-scrollbar-thumb {
+      background: #00f0f0;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
@@ -303,7 +322,34 @@
         <div id="menu-best-score" class="value" style="font-size: 26px; color: #f0a000;">0</div>
       </div>
       <button class="btn" onclick="playSound('start'); showDifficulty()">ゲームスタート</button>
+      <button class="btn btn-secondary" onclick="playSound('button'); showHowToPlay()">遊び方</button>
       <button class="btn btn-secondary" onclick="playSound('button'); showSettings()">設定</button>
+    </div>
+
+    <!-- 1.2 遊び方画面 -->
+    <div id="how-to-play-screen" class="screen hidden">
+      <h1>遊び方</h1>
+      <div class="how-to-content" style="width: 100%; max-height: 290px; overflow-y: auto; background: rgba(42, 42, 60, 0.8); padding: 14px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255, 255, 255, 0.05); font-size: 13px; line-height: 1.6; text-align: left;">
+        <h3 style="color: #00f0f0; margin-bottom: 6px; font-size: 14px;">■ 基本ルール</h3>
+        <p style="margin-bottom: 12px; color: #d1d5db;">上から落ちてくるブロック（テトリミノ）を配置し、横一列を隙間なく揃えると消去されてスコアを獲得できます。<br>画面上部までブロックが積み上がるとゲームオーバーになります。</p>
+
+        <h3 style="color: #00f0f0; margin-bottom: 6px; font-size: 14px;">■ 操作方法（キーボード）</h3>
+        <ul style="margin-left: 18px; margin-bottom: 12px; color: #d1d5db;">
+          <li><b>[← / →]</b> : 左右移動</li>
+          <li><b>[↓]</b> : ソフトドロップ (少し早く落下)</li>
+          <li><b>[↑]</b> : ブロック回転</li>
+          <li><b>[Space]</b> : ハードドロップ (一気に落とす)</li>
+          <li><b>[C / Shift]</b> : ホールド (キープ)</li>
+          <li><b>[P]</b> : 一時停止</li>
+        </ul>
+
+        <h3 style="color: #00f0f0; margin-bottom: 6px; font-size: 14px;">■ 操作方法（スマホ）</h3>
+        <p style="margin-bottom: 12px; color: #d1d5db;">画面下の「←」「→」「↓」「回転」「一気に」「HOLD」ボタンで直感的に操作できます。</p>
+
+        <h3 style="color: #00f0f0; margin-bottom: 6px; font-size: 14px;">■ 特殊機能</h3>
+        <p style="color: #d1d5db;"><b>・ホールド:</b> 出現中のブロックを1つ保管し、好きなタイミングで入れ替えることができます。(1ブロックにつき1回)<br><b>・ゴースト:</b> 落ちる位置を予測した影が表示されます。</p>
+      </div>
+      <button class="btn btn-secondary" onclick="playSound('back'); showMenu()">戻る</button>
     </div>
 
     <!-- 1.5 難易度選択画面 -->
@@ -322,6 +368,13 @@
         <span>BGM (音楽)</span>
         <label class="switch">
           <input type="checkbox" id="bgm-toggle" checked onchange="toggleBgmMode(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-item">
+        <span>ゴースト表示 (落下予測)</span>
+        <label class="switch">
+          <input type="checkbox" id="ghost-toggle" checked onchange="toggleGhostMode(this.checked)">
           <span class="slider"></span>
         </label>
       </div>
@@ -402,7 +455,7 @@
         <div style="font-size: 13px; color: #9ca3af; margin-top: 2px;">LINES: <span id="final-lines" style="color: #fff; font-weight: bold;">0</span></div>
       </div>
       <button id="overlay-resume-btn" class="btn" onclick="playSound('button'); togglePause()">再開</button>
-      <button class="btn btn-secondary" onclick="playSound('start'); restartGame()">リスタート</button>
+      <button class="btn" onclick="playSound('start'); restartGame()">リスタート</button>
       <button class="btn btn-secondary" onclick="playSound('back'); showMenu()">メニューに戻る</button>
     </div>
 
@@ -411,6 +464,7 @@
   <script>
     let audioCtx = null;
     let isBgmEnabled = true;
+    let isGhostEnabled = true;
     let bgmIntervalId = null;
     let bgmNoteIndex = 0;
 
@@ -442,6 +496,10 @@
       } else if (!isPaused && !isGameOver && !document.getElementById('game-screen').classList.contains('hidden')) {
         startBGM();
       }
+    }
+
+    function toggleGhostMode(enabled) {
+      isGhostEnabled = enabled;
     }
 
     function startBGM() {
@@ -879,9 +937,11 @@
       drawMatrix(arena, {x: 0, y: 0}, context);
 
       if (player.matrix) {
-        // ゴースト（落下予測影）の描画
-        const ghostPos = getGhostPosition();
-        drawMatrix(player.matrix, ghostPos, context, true);
+        // ゴースト（落下予測影）の描画（ONの時のみ）
+        if (isGhostEnabled) {
+          const ghostPos = getGhostPosition();
+          drawMatrix(player.matrix, ghostPos, context, true);
+        }
 
         // 操作中ブロックの描画
         drawMatrix(player.matrix, player.pos, context);
@@ -960,9 +1020,15 @@
 
       document.getElementById('menu-screen').classList.remove('hidden');
       document.getElementById('difficulty-screen').classList.add('hidden');
+      document.getElementById('how-to-play-screen').classList.add('hidden');
       document.getElementById('settings-screen').classList.add('hidden');
       document.getElementById('game-screen').classList.add('hidden');
       document.getElementById('overlay').classList.add('hidden');
+    }
+
+    function showHowToPlay() {
+      document.getElementById('menu-screen').classList.add('hidden');
+      document.getElementById('how-to-play-screen').classList.remove('hidden');
     }
 
     function showDifficulty() {
